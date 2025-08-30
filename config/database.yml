@@ -1,0 +1,22 @@
+default: &default
+  adapter: mysql2
+  encoding: utf8mb4
+  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+  username: root
+  password:123456578
+  host: localhost
+  port: 3306
+
+development:
+  <<: *default
+  database: blog_api_development
+
+test:
+  <<: *default
+  database: blog_api_test
+
+production:
+  <<: *default
+  database: blog_api_production
+  username: root
+  password:
