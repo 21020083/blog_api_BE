@@ -2,21 +2,21 @@ default: &default
   adapter: mysql2
   encoding: utf8mb4
   pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
-  username: root
-  password:123456578
-  host: localhost
-  port: 3306
+  username: <%= ENV["MYSQL_USER"] || "root" %>
+  password: <%= ENV["MYSQL_PASSWORD"] || "" %>
+  host: <%= ENV["DB_HOST"] || "localhost" %>
+  port: <%= ENV["DB_PORT"] || "3307" %>
 
 development:
   <<: *default
-  database: blog_api_development
+  database: <%= ENV["MYSQL_DATABASE"] || "blog_api_development" %>
 
 test:
   <<: *default
-  database: blog_api_test
+  database: <%= ENV["MYSQL_DATABASE"] ? "#{ENV['MYSQL_DATABASE']}_test" : "blog_api_test" %>
 
 production:
   <<: *default
-  database: blog_api_production
-  username: root
-  password:
+  database: <%= ENV["MYSQL_DATABASE"] || "blog_api_production" %>
+  username: <%= ENV["MYSQL_USER"] || "root" %>
+  password: <%= ENV["MYSQL_PASSWORD"] || "" %>
