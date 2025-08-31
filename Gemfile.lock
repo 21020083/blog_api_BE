@@ -301,7 +301,7 @@ PLATFORMS
   x86_64-linux
 
 DEPENDENCIES
-  bcrypt (~> 3.1.7)
+  bcrypt (~> 3.1.8)
   bootsnap
   brakeman
   debug
