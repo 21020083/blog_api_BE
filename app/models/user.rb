@@ -1,6 +1,10 @@
 class User < ApplicationRecord
   has_secure_password
 
+  # Associations
+  has_many :blogs, dependent: :destroy
+
+  # Validations
   enum :role, { admin: 0, user: 1, reader: 2 }
 
   validates :username, presence: true, uniqueness: true
