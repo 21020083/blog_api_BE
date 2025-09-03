@@ -8,7 +8,7 @@ class User < ApplicationRecord
   enum :role, { admin: 0, user: 1, reader: 2 }
 
   validates :username, presence: true, uniqueness: true
-  validates :email, presence: true, uniqueness: true
+  validates :email, presence: true, uniqueness: true, format: { with: URI::MailTo::EMAIL_REGEXP }
   validates :password, presence: true, length: { minimum: 8 }, allow_nil: true
   validates :role, inclusion: { in: roles.keys }, allow_nil: true
 
