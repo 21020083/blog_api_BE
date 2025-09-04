@@ -1,12 +1,13 @@
 class Api::V1::BlogsController < ApplicationController
-  before_action :set_user
+  before_action :set_user, only: [:index, :create]
   before_action :set_blog, only: [:show, :update, :destroy]
 
   # GET /api/v1/users/:user_id/blogs
   def index
     @blogs = @user.blogs.where(deleted_at: nil).order(created_at: :desc)
-    render json: @blogs
-  end
+    render jsonapi: @blogs
+    byebug
+  end 
 
   # GET /api/v1/users/:user_id/blogs/:id
   def show
@@ -55,7 +56,7 @@ class Api::V1::BlogsController < ApplicationController
   end
 
   def set_blog
-    @blog = @user.blogs.find(params[:id])
+    @blog = Blog.find(params[:id])
   end
 
   def blog_params

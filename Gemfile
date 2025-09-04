@@ -22,6 +22,8 @@ gem "solid_queue"
 gem "solid_cable"
 gem "kaminari"
 gem "acts_as_votable"
+gem 'jsonapi-rails'
+gem "jsonapi-serializable"
 # Reduces boot times through caching; required in config/boot.rb
 gem "bootsnap", require: false
 
@@ -50,4 +52,5 @@ group :development, :test do
   gem "rspec-rails"
   gem "factory_bot_rails"
   gem "faker"
+  gem 'byebug'
 end

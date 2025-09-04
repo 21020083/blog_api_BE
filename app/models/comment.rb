@@ -1,6 +1,6 @@
 class Comment < ApplicationRecord
-  belongs_to :user
-  belongs_to :blog
+  belongs_to :user, optional: false
+  belongs_to :blog, optional: false
   belongs_to :parent_comment, class_name: 'Comment', optional: true
 
   has_many :replies, class_name: 'Comment', foreign_key: 'parent_comment_id', dependent: :destroy
@@ -14,6 +14,6 @@ class Comment < ApplicationRecord
   private
 
   def comment_with_replies
-    Comment.where(parent_comment_id: id)
+    [self] + replies.includes(:replies).flat_map(&:comment_with_replies)
   end
 end

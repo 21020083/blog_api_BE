@@ -19,6 +19,8 @@ class User < ApplicationRecord
   around_destroy :log_destroy_operation
   after_destroy :notify_users
 
+  acts_as_voter
+
   private
 
   def set_name_if_blank

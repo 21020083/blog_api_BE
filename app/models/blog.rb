@@ -1,6 +1,6 @@
 class Blog < ApplicationRecord
   # Associations
-  belongs_to :user
+  belongs_to :user, optional: false
 
   has_many :comments, dependent: :destroy
   # Enums
@@ -16,6 +16,8 @@ class Blog < ApplicationRecord
   # Callbacks
   before_validation :generate_slug
   before_validation :set_default_status
+
+  acts_as_votable
 
   # Scopes
   scope :published, -> { where(status: :published) }
