@@ -1,2 +1,21 @@
-class Api::V1::RegistrationsController < ApplicationController
+class Api::V1::RegistrationsController < Devise::RegistrationsController
+  respond_to :json
+
+  private
+
+  def respond_with(resource, _opts = {})
+    if resource.persisted?
+      render json: {
+        message: 'Signed up successfully.',
+        token: current_token,
+        user: { id: resource.id, username: resource.username, email: resource.email, role: resource.role }
+      }, status: :ok
+    else
+      render json: { errors: resource.errors.full_messages }, status: :unprocessable_entity
+    end
+  end
+
+  def current_token
+    request.env['warden-jwt_auth.token']
+  end
 end
