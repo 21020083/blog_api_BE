@@ -41,10 +41,14 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_04_032539) do
     t.string "username"
     t.string "name"
     t.string "email"
-    t.string "password_digest"
+    t.string "encrypted_password", default: "", null: false
     t.integer "role"
+    t.string "jti", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.index ["email"], name: "index_users_on_email", unique: true
+    t.index ["jti"], name: "index_users_on_jti", unique: true
+    t.index ["name"], name: "index_users_on_name", unique: true
   end
 
   create_table "votes", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|

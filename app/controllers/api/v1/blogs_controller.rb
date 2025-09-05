@@ -5,8 +5,7 @@ class Api::V1::BlogsController < ApplicationController
   # GET /api/v1/users/:user_id/blogs
   def index
     @blogs = @user.blogs.where(deleted_at: nil).order(created_at: :desc)
-    render jsonapi: @blogs
-    byebug
+    render jsonapi: @blogs, include: [:user, :comments]
   end 
 
   # GET /api/v1/users/:user_id/blogs/:id

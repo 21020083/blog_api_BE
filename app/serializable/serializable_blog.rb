@@ -1,20 +1,8 @@
 class SerializableBlog < JSONAPI::Serializable::Resource
   type :blogs
 
-  attributes :title, :content, :slug, :created_at, :updated_at
-    
-
-  attribute :date do
-    @object.created_at
-  end
+  attributes :title, :content
 
   belongs_to :user
-
-  has_many :comments do
-    data do
-      @object.comments
-    end
-
-  end
-
+  has_many :comments
 end

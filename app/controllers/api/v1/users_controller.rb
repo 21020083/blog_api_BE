@@ -7,20 +7,23 @@ module Api
       def index
         @users = User.all
 
-        render json: @users
+        render jsonapi: @users, meta: {
+          total_count: @users.total_count,
+          total_pages: @users.total_pages,
+          current_page: @users.current_page,
+        }
       end
 
       # GET /users/1
       def show
-        render json: @user
+        render jsonapi: @user
       end
-
       # POST /users
       def create
         @user = User.new(user_params)
 
         if @user.save
-          render json: @user, status: :created, location: @user
+          render jsonapi: @user
         else
           render json: @user.errors, status: :unprocessable_entity
         end
@@ -29,7 +32,7 @@ module Api
       # PATCH/PUT /users/1
       def update
         if @user.update(user_params)
-          render json: @user
+          render jsonapi: @user
         else
           render json: @user.errors, status: :unprocessable_entity
         end
@@ -38,6 +41,7 @@ module Api
       # DELETE /users/1
       def destroy
         @user.destroy!
+        render jsonapi: @user
       end
 
       private
@@ -50,6 +54,7 @@ module Api
         def user_params
           params.expect(user: [ :username, :name, :email, :role, :password_digest ])
         end
+
     end
   end
 end

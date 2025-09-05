@@ -1,6 +1,7 @@
 class User < ApplicationRecord
-  has_secure_password
-
+  devise :database_authenticatable, :registerable,
+  :jwt_authenticatable, jwt_revocation_strategy: Devise::JWT::RevocationStrategies::JTIMatcher
+  
   # Associations
   has_many :blogs, dependent: :destroy
 
