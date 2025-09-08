@@ -23,9 +23,9 @@ gem "solid_cable"
 gem "kaminari"
 gem "acts_as_votable"
 gem 'jsonapi-rails'
-gem "jsonapi-serializable"
 gem 'devise'
 gem 'devise-jwt'
+gem 'jsonapi-serializer'
 # Reduces boot times through caching; required in config/boot.rb
 gem "bootsnap", require: false
 

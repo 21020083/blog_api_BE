@@ -152,8 +152,6 @@ GEM
     jsonapi-renderer (0.2.2)
     jsonapi-serializable (0.3.1)
       jsonapi-renderer (~> 0.2.0)
-    jwt (2.10.2)
-      base64
     kamal (2.7.0)
       activesupport (>= 7.0)
       base64 (~> 0.2)
@@ -428,7 +426,7 @@ DEPENDENCIES
   factory_bot_rails
   faker
   jsonapi-rails
-  jsonapi-serializable
+  jsonapi-serializer
   kamal
   kaminari
   mysql2 (>= 0.5)

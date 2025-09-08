@@ -1,21 +1,24 @@
 class Api::V1::RegistrationsController < Devise::RegistrationsController
+  include ::RackSessionsFix
   respond_to :json
 
   private
 
-  def respond_with(resource, _opts = {})
+  def sign_up_params
+    params.require(:user).permit(:username, :name, :email, :password, :password_confirmation, :role)
+  end
+  
+  def respond_with(current_user, _opts = {})
     if resource.persisted?
       render json: {
-        message: 'Signed up successfully.',
-        token: current_token,
-        user: { id: resource.id, username: resource.username, email: resource.email, role: resource.role }
-      }, status: :ok
+        status: {code: 200, message: 'Signed up successfully.'},
+        data: UserSerializer.new(current_user).serializable_hash[:data][:attributes]
+      }
     else
-      render json: { errors: resource.errors.full_messages }, status: :unprocessable_entity
+      render json: {
+        status: {message: "User couldn't be created successfully. #{current_user.errors.full_messages.to_sentence}"}
+      }, status: :unprocessable_entity
     end
   end
-
-  def current_token
-    request.env['warden-jwt_auth.token']
-  end
+  
 end

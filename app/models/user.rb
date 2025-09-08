@@ -1,57 +1,36 @@
 class User < ApplicationRecord
-  devise :database_authenticatable, :registerable,
-  :jwt_authenticatable, jwt_revocation_strategy: Devise::JWT::RevocationStrategies::JTIMatcher
-  
-  # Associations
-  has_many :blogs, dependent: :destroy
+  include Devise::JWT::RevocationStrategies::JTIMatcher
 
-  # Validations
+   devise :database_authenticatable, :registerable, :recoverable, :validatable, 
+          :jwt_authenticatable, jwt_revocation_strategy: self  
+  
+  #to_do: add role
   enum :role, { admin: 0, user: 1, reader: 2 }
 
-  validates :username, presence: true, uniqueness: true
-  validates :email, presence: true, uniqueness: true, format: { with: URI::MailTo::EMAIL_REGEXP }
-  validates :password, presence: true, length: { minimum: 8 }, allow_nil: true
-  validates :role, inclusion: { in: roles.keys }, allow_nil: true
+  # Validations cho username
+  validates :username, presence: true, uniqueness: { case_sensitive: false }, length: { minimum: 3 }
+  validates :email, presence: true, uniqueness: { case_sensitive: false }, format: { with: URI::MailTo::EMAIL_REGEXP }
+  validates :name, presence: true, length: { minimum: 3 }
+  validates :role, presence: true, inclusion: { in: roles.keys }
+  validates :password, presence: true, length: { minimum: 6 }
+  validates :password_confirmation, presence: true, on: :create
 
-  before_validation :set_name_if_blank, :set_default_role
-  after_validation :log_errors
-
-  before_destroy :check_admin_count
-  around_destroy :log_destroy_operation
-  after_destroy :notify_users
-
-  acts_as_voter
+  #callbacks
+  before_validation :name_from_username
+  before_validation :set_default_role, on: :create
+  before_create :generate_jti
 
   private
 
-  def set_name_if_blank
-    self.name = username if name.blank?
+  def generate_jti
+    self.jti ||= SecureRandom.uuid
   end
-
+  
   def set_default_role
-    self.role ||= :user
+    self.role ||= :user 
   end
 
-  def log_errors
-    if errors.any?
-      Rails.logger.error("User validation errors: #{errors.full_messages.join(", ")}")
-    end
-  end
-
-  def check_admin_count
-    if admin? && User.where(role: roles[:admin]).count == 1
-      throw :abort
-    end
-    Rails.logger.info("Checked the admin count")
-  end
-
-  def log_destroy_operation
-    Rails.logger.info("Destroying user #{id}")
-    yield
-    Rails.logger.info("Destroyed user #{id}")
-  end
-
-  def notify_users
-    Rails.logger.info("Notifying users about the user destruction")
+  def name_from_username
+    self.name ||= self.username
   end
 end

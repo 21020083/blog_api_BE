@@ -1,32 +1,16 @@
 module Api
   module V1
     class UsersController < ApplicationController
+      before_action :authenticate_api_v1_user!
       before_action :set_user, only: %i[ show update destroy ]
-
       # GET /users
       def index
-        @users = User.all
-
-        render jsonapi: @users, meta: {
-          total_count: @users.total_count,
-          total_pages: @users.total_pages,
-          current_page: @users.current_page,
-        }
+            render json: UserSerializer.new(current_user).serializable_hash[:data][:attributes], status: :ok
       end
 
       # GET /users/1
       def show
         render jsonapi: @user
-      end
-      # POST /users
-      def create
-        @user = User.new(user_params)
-
-        if @user.save
-          render jsonapi: @user
-        else
-          render json: @user.errors, status: :unprocessable_entity
-        end
       end
 
       # PATCH/PUT /users/1
@@ -47,12 +31,12 @@ module Api
       private
         # Use callbacks to share common setup or constraints between actions.
         def set_user
-          @user = User.find(params.expect(:id))
+          @user = User.find(params[:id])
         end
 
         # Only allow a list of trusted parameters through.
         def user_params
-          params.expect(user: [ :username, :name, :email, :role, :password_digest ])
+          params.require(:user).permit(:username, :name, :email)
         end
 
     end
