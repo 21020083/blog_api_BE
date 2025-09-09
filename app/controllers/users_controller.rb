@@ -1,35 +1,53 @@
 # app/controllers/users_controller.rb
 class UsersController < ApplicationController
-  before_action :authenticate_user!, except: [ :create ]
+  before_action :authenticate_user!
+  before_action :set_user, only: [ :show, :update, :destroy ]
+  before_action :authorize_user, only: [ :show, :update, :destroy ]
+
   def index
-      users = User.all
-      render json: { users: users }
+    page = params[:page] || 1
+    per_page = params[:per_page] || 10
+    users = User.all.page(page).per(per_page)
+    meta = {
+      total_pages: users.total_pages,
+      current_page: users.current_page,
+      per_page: users.limit_value,
+      total_count: users.total_count
+    }
+    if users.empty?
+      render_error message: "No users found", status: :not_found, data: users.as_json
+    else
+      render_success data: UserSerializer.new(users).serializable_hash[:data], meta: meta
+    end
   end
 
   def create
     user = User.new(user_params)
     if user.save
-      render json: { user: user, token: generate_jwt(user) }, status: :created
+      render_success data: UserSerializer.new(user).serializable_hash[:data][:attributes], status: :created
     else
-      render json: { errors: user.errors.full_messages }, status: :unprocessable_entity
+      render_error errors: user.errors.full_messages, status: :unprocessable_entity
     end
   end
 
   def show
-    render json: { user: @user }
+    render_success data: UserSerializer.new(@user).serializable_hash[:data][:attributes]
   end
 
   def update
     if @user.update(user_params)
-      render json: { user: @user }
+      render_success data: UserSerializer.new(@user).serializable_hash[:data][:attributes]
     else
-      render json: { errors: @user.errors.full_messages }, status: :unprocessable_entity
+      render_error errors: @user.errors.full_messages, status: :unprocessable_entity
     end
   end
 
   def destroy
-    @user.soft_delete
-    head :no_content
+    if @user.destroy
+      render_success message: "User deleted successfully."
+    else
+      render_error errors: @user.errors.full_messages, status: :unprocessable_entity
+    end
   end
 
   private
@@ -39,9 +57,9 @@ class UsersController < ApplicationController
   end
 
   def authorize_user
-    unless current_user == @user || current_user.admin?
-      render json: { error: "Unauthorized" }, status: :unauthorized
-    end
+    return if current_user == @user || current_user.admin?
+
+    render_error message: "Unauthorized", status: :unauthorized
   end
 
   def user_params

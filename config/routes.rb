@@ -8,5 +8,7 @@ Rails.application.routes.draw do
     sessions: "users/sessions",
     registrations: "users/registrations"
   }
-  resources :users, only: [ :index, :show, :update, :destroy ]
+  resources :users, only: [ :index, :show, :update, :destroy ] do
+    resources :blogs, only: [ :index, :show, :create, :update, :destroy ], shallow: true 
+  end
 end
