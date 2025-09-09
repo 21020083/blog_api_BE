@@ -1,19 +1,19 @@
-module RackSessionsFix  
-  extend ActiveSupport::Concern  
-  
+module RackSessionsFix
+  extend ActiveSupport::Concern
+
   class FakeRackSession < Hash
     def enabled?
       false
-    end    
+    end
     def destroy; end
-  end  
+  end
   included do
-    before_action :set_fake_session    
+    before_action :set_fake_session
 
-    private    
-    
+    private
+
     def set_fake_session
-      request.env['rack.session'] ||= FakeRackSession.new
-    end  
+      request.env["rack.session"] ||= FakeRackSession.new
+    end
   end
 end
