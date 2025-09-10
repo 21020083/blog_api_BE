@@ -18,4 +18,8 @@ class Blog < ApplicationRecord
   def default_status
     self.status = :draft if self.status.blank?
   end
+
+  def url_by_slug
+    Rails.application.routes.url_helpers.blog_path(self)
+  end
 end

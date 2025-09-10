@@ -11,7 +11,8 @@ class User < ApplicationRecord
   validates :email, presence: true, uniqueness: true, format: { with: URI::MailTo::EMAIL_REGEXP }
   validates :role, presence: true, inclusion: { in: roles.keys }
   validates :jti, presence: true, uniqueness: true
-  validates :password, presence: true, confirmation: true, length: { minimum: 6 }
+  validates :password, confirmation: true, length: { minimum: 6 }, if: :password_required?
+  validate :role_changed_allowed, on: :update
 
   before_validation :default_role, :set_default_name
   before_validation :set_jti, on: :create
@@ -46,5 +47,15 @@ class User < ApplicationRecord
 
   def set_jti
     self.jti = SecureRandom.uuid if self.jti.blank?
+  end
+  
+  def password_required?
+    new_record? || password.present?
+  end
+
+  def role_changed_allowed
+    if role_changed? && !User.current_admin?
+      errors.add(:role, "can only be changed by admin")
+    end
   end
 end

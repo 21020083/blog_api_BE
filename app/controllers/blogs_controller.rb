@@ -1,33 +1,31 @@
 class BlogsController < ApplicationController
   before_action :authenticate_user!
-  before_action :authorize_user, only: [ :update, :destroy ]
   before_action :set_blog, only: [ :show, :update, :destroy ]
-  before_action :set_user, only: [ :index, :show ]
+  before_action :set_user, only: [ :index, :show, :create ]
+  before_action :is_owner?, only: [ :update, :create ]
+  before_action :owner_or_admin?, only: [:destroy ]
+ 
 
   def index
     blogs = @user.blogs.page(params[:page]).per(params[:per_page] || 10)
 
     meta = {
-      total_pages: blogs.total_pages,
+      total_pages: blogs.total_pages, 
       current_page: blogs.current_page,
       per_page: blogs.limit_value,
       total_count: blogs.total_count
     }
-    if blogs.empty?
-      render_error message: "No blogs found", status: :not_found, data: @user.blogs.as_json
-    else
-      render_success data: BlogSerializer.new(blogs).serializable_hash[:data], meta: meta
-    end
+      render_success resource: blogs, meta: meta
   end
 
   def show
-    render_success data: BlogSerializer.new(@blog).serializable_hash[:data]
+    render_success resource: @blog
   end
 
   def create
-    @blog = current_user.blogs.build(blog_params)
+    @blog = @user.blogs.build(blog_params)
     if @blog.save
-      render_success data: BlogSerializer.new(@blog).serializable_hash[:data], status: :created
+      render_success resource: @blog, status: :created
     else
       render_error errors: @blog.errors.full_messages, status: :unprocessable_entity
     end
@@ -35,7 +33,7 @@ class BlogsController < ApplicationController
 
   def update
     if @blog.update(blog_params)
-      render_success data: BlogSerializer.new(@blog).serializable_hash[:data]
+      render_success resource: @blog
     else
       render_error errors: @blog.errors.full_messages, status: :unprocessable_entity
     end
@@ -52,14 +50,16 @@ class BlogsController < ApplicationController
   private
 
   def set_blog
-    @blog = Blog.find_by(id: params[:id])
-    render_error message: "Blog not found", status: :not_found unless @blog
+    @blog = Blog.find_by(id: params[:id]) || Blog.find_by(slug: params[:id])
+    render_error errors: "Blog not found", status: :not_found unless @blog
   end
 
-  def authorize_user
-    return if current_user == @blog.user || current_user.admin?
+  def is_owner?
+    render_error errors: "not owner", status: :unauthorized unless current_user == @user
+  end
 
-    render_error message: "Unauthorized", status: :unauthorized
+  def owner_or_admin?
+    render_error errors: "Unauthorized", status: :unauthorized unless current_user == @user || current_user.admin?
   end
 
   def blog_params
@@ -67,7 +67,7 @@ class BlogsController < ApplicationController
   end
 
   def set_user
-    @user = User.find_by(id: params[:user_id]) || current_user
-    render_error message: "User not found", status: :not_found unless @user
+    @user = User.find_by(id: params[:user_id])
+    render_error errors: "User not found", status: :not_found unless @user
   end
 end
