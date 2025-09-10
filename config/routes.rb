@@ -9,6 +9,12 @@ Rails.application.routes.draw do
     registrations: "users/registrations"
   }
   resources :users do
-    resources :blogs, shallow: true 
+    resources :blogs, shallow: true do
+      resources :comments, shallow: true do
+      end
+    end
+  end
+  resources :comments, only: [] do
+    post :replies, to: "comments#create_reply"
   end
 end
