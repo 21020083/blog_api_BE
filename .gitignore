@@ -32,3 +32,4 @@
 /config/master.key
 /vendor/bundle
 /usr/local/bundle
+docker-compose.yml

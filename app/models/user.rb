@@ -1,54 +1,61 @@
 class User < ApplicationRecord
-  has_secure_password
+  include Devise::JWT::RevocationStrategies::JTIMatcher
 
-  ROLES = { admin: 0, user: 1, reader: 2 }
+  has_many :blogs, dependent: :destroy
 
-  validates :username, presence: true, uniqueness: true
-  validates :email, presence: true, uniqueness: true
-  validates :password, presence: true, length: { minimum: 8 }, allow_nil: true
-  validates :role, inclusion: { in: ROLES.values }
+  devise :database_authenticatable, :registerable, :recoverable, :validatable, :jwt_authenticatable, jwt_revocation_strategy: self
 
-  before_validation :set_name_if_blank, :set_default_role
-  after_validation :log_errors
+  enum :role, { admin: 0, user: 1 }
 
-  before_destroy :check_admin_count
-  around_destroy :log_destroy_operation
-  after_destroy :notify_users
+  validates :name, presence: true, length: { minimum: 3 }
+  validates :email, presence: true, uniqueness: true, format: { with: URI::MailTo::EMAIL_REGEXP }
+  validates :role, presence: true, inclusion: { in: roles.keys }
+  validates :jti, presence: true, uniqueness: true
+  validates :password, confirmation: true, length: { minimum: 6 }, if: :password_required?
+  validate :role_changed_allowed, on: :update
 
-  private
+  before_validation :default_role, :set_default_name
+  before_validation :set_jti, on: :create
 
-  def set_name_if_blank
-   self.name = username if name.blank?
+  def self.jwt_revoked?(payload, user)
+    user.jti != payload["jti"]
   end
 
-  def set_default_role
-    self.role = ROLES[:user] if role.blank?
+  def self.revoke_jwt(payload, user)
+    user.update(jti: SecureRandom.uuid)
   end
 
-  def log_errors
-    if errors.any?
-      Rails.logger.error("User validation errors: #{errors.full_messages.join(", ")}")
+  def default_role
+    self.role = :user if self.role.blank?
+  end
+
+  def set_default_name
+    return if self.name.present?
+    return unless self.email.present?
+
+    base_name = email.split("@").first.parameterize
+
+    loop do
+      random_suffix = SecureRandom.alphanumeric(4).downcase
+      candidate = "#{base_name}-#{random_suffix}"
+      unless self.class.exists?(name: candidate)
+        self.name = candidate
+        break
+      end
     end
   end
 
-  def check_admin_count
-    if admin? && User.where(role: 0).count == 1
-      throw :abort
+  def set_jti
+    self.jti = SecureRandom.uuid if self.jti.blank?
+  end
+  
+  def password_required?
+    new_record? || password.present?
+  end
+
+  def role_changed_allowed
+    if role_changed? && !User.current_admin?
+      errors.add(:role, "can only be changed by admin")
     end
-    Rails.logger.info("Checked the admin count")
-  end
-
-  def log_destroy_operation
-    Rails.logger.info("Destroying user #{id}")
-    yield
-    Rails.logger.info("Destroyed user #{id}")
-  end
-
-  def notify_users
-    Rails.logger.info("Notifying users about the user destruction")
-  end
-
-  def admin?
-    role == 0
   end
 end
