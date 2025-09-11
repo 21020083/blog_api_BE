@@ -54,7 +54,7 @@ class BlogsController < ApplicationController
   end
 
   def blog_params
-    params.require(:blog).permit(:title, :content, :status)
+    params.require(:blog).permit(:title, :content, :status, :category_id)
   end
 
   def set_user

@@ -74,6 +74,7 @@ GEM
       uri (>= 0.13.1)
     acts_as_votable (0.14.0)
     ast (2.4.3)
+    babosa (2.0.0)
     base64 (0.3.0)
     bcrypt (3.1.20)
     bcrypt_pbkdf (1.1.1)
@@ -370,6 +371,7 @@ PLATFORMS
 
 DEPENDENCIES
   acts_as_votable
+  babosa
   bcrypt (~> 3.1.7)
   bootsnap
   brakeman

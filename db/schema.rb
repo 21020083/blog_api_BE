@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_09_10_115215) do
+ActiveRecord::Schema[8.0].define(version: 2025_09_11_065941) do
   create_table "blogs", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "title", null: false
     t.text "content", null: false
@@ -19,8 +19,20 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_10_115215) do
     t.string "status", default: "draft", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "category_id"
+    t.index ["category_id"], name: "index_blogs_on_category_id"
     t.index ["slug"], name: "index_blogs_on_slug", unique: true
     t.index ["user_id"], name: "index_blogs_on_user_id"
+  end
+
+  create_table "categories", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
+    t.string "name"
+    t.string "slug"
+    t.bigint "parent_category_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["parent_category_id"], name: "index_categories_on_parent_category_id"
+    t.index ["slug"], name: "index_categories_on_slug", unique: true
   end
 
   create_table "comments", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
@@ -67,7 +79,9 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_10_115215) do
     t.index ["voter_type", "voter_id"], name: "index_votes_on_voter"
   end
 
+  add_foreign_key "blogs", "categories"
   add_foreign_key "blogs", "users"
+  add_foreign_key "categories", "categories", column: "parent_category_id"
   add_foreign_key "comments", "blogs"
   add_foreign_key "comments", "comments", column: "parent_comment_id"
   add_foreign_key "comments", "users"
