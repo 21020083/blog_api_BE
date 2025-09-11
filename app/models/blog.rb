@@ -11,6 +11,8 @@ class Blog < ApplicationRecord
 
   before_validation :generate_slug, :default_status
 
+  scope :by_id_or_slug, ->(value) { where("id = :value OR slug = :value", value: value)}
+
   private
 
   def generate_slug

@@ -1,9 +1,12 @@
 class CommentsController < ApplicationController
   include VotableController
+  include Authorizable
 
   before_action :authenticate_user!
   before_action :set_blog, only: [ :index, :create ]
   before_action :set_comment, only: [ :show, :update, :destroy, :create_reply ]
+  before_action :authorize_owner!, only: [ :update]
+  before_action :authorize_admin_owner!, only: [ :destroy ]
 
   skip_before_action :authenticate_user!, only: [ :index, :show ]
 
@@ -61,18 +64,15 @@ class CommentsController < ApplicationController
   private
 
   def set_blog
-    @blog = Blog.find_by(id: params[:blog_id]) || Blog.find_by(slug: params[:blog_id])
+    @blog = Blog.by_id_or_slug(params[:blog_id]).first
     render_error errors: "Blog not found", status: :not_found unless @blog
   end
 
   def set_comment
-    @comment = Comment.find_by(id: params[:id]) || Comment.find_by(id: params[:comment_id])
-    render_error errors: "Comment not found hehe", status: :not_found unless @comment
+    @comment = Comment.find_by(id: params[:id])
+    render_error errors: "Comment not found", status: :not_found unless @comment
   end
 
-  def authorize_comment
-    render_error errors: "Unauthorized", status: :unauthorized unless current_user == @comment.user || current_user.admin?
-  end
 
   def comment_params
     params.require(:comment).permit(:comment_text, :parent_comment_id)
