@@ -5,8 +5,8 @@ class BlogsController < ApplicationController
   before_action :authenticate_user!
   before_action :set_blog, only: [ :show, :update, :destroy ]
   before_action :set_user, only: [ :index, :create ]
-  before_action :authorize_owner!, only: [ :update ]
-  before_action :authorize_admin_owner!, only: [ :destroy ]
+  before_action -> { authorize_owner!(@blog) }, only: [ :update ]
+  before_action -> { authorize_admin_owner!(@blog) }, only: [ :destroy ]
 
   skip_before_action :authenticate_user!, only: [ :index, :show ]
 
