@@ -10,7 +10,17 @@ Rails.application.routes.draw do
   }
   resources :users do
     resources :blogs, shallow: true do
+      member do
+        post :upvote
+        post :downvote
+        post :remove_vote
+      end
       resources :comments, shallow: true do
+        member do
+          post :upvote
+          post :downvote
+          post :remove_vote
+        end
       end
     end
   end

@@ -10,5 +10,5 @@ class UserSerializer
         url: Rails.application.routes.url_helpers.blog_path(b.slug)
       }
     end
-  end  
+  end
 end

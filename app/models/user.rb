@@ -50,7 +50,7 @@ class User < ApplicationRecord
   def set_jti
     self.jti = SecureRandom.uuid if self.jti.blank?
   end
-  
+
   def password_required?
     new_record? || password.present?
   end

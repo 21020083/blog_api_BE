@@ -1,15 +1,20 @@
 class CommentsController < ApplicationController
+  include VotableController
+
   before_action :authenticate_user!
-  before_action :set_blog, only: [:index, :create]
-  before_action :set_comment, only: [:show, :update, :destroy, :create_reply]
+  before_action :set_blog, only: [ :index, :create ]
+  before_action :set_comment, only: [ :show, :update, :destroy, :create_reply ]
+
+  skip_before_action :authenticate_user!, only: [ :index, :show ]
 
   def index
-    comments = @blog.comments.root_comments.all
-    render_success resource: comments
+    comments = @blog.comments.root_comments.page(params[:page]).per(params[:per_page] || 10)
+    meta = pagination_data(comments)
+    render_success resource: comments, meta: meta
   end
 
   def show
-    render json: serialize_comment_tree(@comment)
+    render_success resource: @comment
   end
 
   def create
@@ -45,8 +50,12 @@ class CommentsController < ApplicationController
   end
 
   def destroy
-    @comment.destroy
-    head :no_content
+    old_comment = @comment
+    if @comment.destroy
+      render_success resource: old_comment
+    else
+      render_error errors: @comment.errors.full_messages, status: :unprocessable_entity
+    end
   end
 
   private
@@ -67,17 +76,5 @@ class CommentsController < ApplicationController
 
   def comment_params
     params.require(:comment).permit(:comment_text, :parent_comment_id)
-  end
-
-  def serialize_comment_tree(comment)
-    {
-      id: comment.id,
-      comment_text: comment.comment_text,
-      user: {
-        id: comment.user.id,
-        name: comment.user.name
-      },
-      replies: comment.replies.map { |r| serialize_comment_tree(r) } # recursion
-    }
   end
 end

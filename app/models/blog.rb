@@ -1,7 +1,7 @@
 class Blog < ApplicationRecord
   belongs_to :user
   has_many :comments, dependent: :destroy
-  acts_as_votable
+  include Votable
 
   enum :status, { draft: "draft", published: "published" }
   validates :title, presence: true, uniqueness: true
