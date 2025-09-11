@@ -1,21 +1,20 @@
 class BlogsController < ApplicationController
+  include VotableController
+  include Authorizable
+
   before_action :authenticate_user!
   before_action :set_blog, only: [ :show, :update, :destroy ]
-  before_action :set_user, only: [ :index, :show, :create ]
-  before_action :is_owner?, only: [ :update, :create ]
-  before_action :owner_or_admin?, only: [:destroy ]
- 
+  before_action :set_user, only: [ :index, :create ]
+  before_action -> { authorize_owner!(@blog) }, only: [ :update ]
+  before_action -> { authorize_admin_owner!(@blog) }, only: [ :destroy ]
+
+  skip_before_action :authenticate_user!, only: [ :index, :show ]
+
 
   def index
     blogs = @user.blogs.page(params[:page]).per(params[:per_page] || 10)
-
-    meta = {
-      total_pages: blogs.total_pages, 
-      current_page: blogs.current_page,
-      per_page: blogs.limit_value,
-      total_count: blogs.total_count
-    }
-      render_success resource: blogs, meta: meta
+    meta = pagination_data(blogs)
+    render_success resource: blogs, meta: meta
   end
 
   def show
@@ -50,16 +49,8 @@ class BlogsController < ApplicationController
   private
 
   def set_blog
-    @blog = Blog.find_by(id: params[:id]) || Blog.find_by(slug: params[:id])
+    @blog = Blog.by_id_or_slug(params[:id]).first
     render_error errors: "Blog not found", status: :not_found unless @blog
-  end
-
-  def is_owner?
-    render_error errors: "not owner", status: :unauthorized unless current_user == @user
-  end
-
-  def owner_or_admin?
-    render_error errors: "Unauthorized", status: :unauthorized unless current_user == @user || current_user.admin?
   end
 
   def blog_params

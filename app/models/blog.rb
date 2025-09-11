@@ -1,5 +1,7 @@
 class Blog < ApplicationRecord
   belongs_to :user
+  has_many :comments, dependent: :destroy
+  include Votable
 
   enum :status, { draft: "draft", published: "published" }
   validates :title, presence: true, uniqueness: true
@@ -8,6 +10,8 @@ class Blog < ApplicationRecord
   validates :slug, presence: true, uniqueness: true
 
   before_validation :generate_slug, :default_status
+
+  scope :by_id_or_slug, ->(value) { where("id = :value OR slug = :value", value: value)}
 
   private
 
