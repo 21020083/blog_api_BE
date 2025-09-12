@@ -1,7 +1,6 @@
 class CategoriesController < ApplicationController
-  before_action :authenticate_user!, only: [:create, :update, :destroy]
-  before_action :is_admin?, only: [:create, :update, :destroy]
-  before_action :set_category, only: [:show, :update, :destroy]
+  before_action :authenticate_user!, :is_admin?, only: [ :create, :update, :destroy ]
+  before_action :set_category, only: [ :show, :update, :destroy ]
 
   def index
     root_categories = Category.root_categories.page(params[:page]).per(params[:per_page] || 10)
@@ -10,7 +9,8 @@ class CategoriesController < ApplicationController
   end
 
   def show
-    render_success(resource: @category)
+    blogs = @category.blogs_from_leaf_descendants
+    render_success(resource: { category: @category, blogs: blogs })
   end
 
   def create
@@ -38,8 +38,7 @@ class CategoriesController < ApplicationController
   private
 
   def set_category
-    slugs = params[:slug].split("/")
-    @category = Category.by_slug(slugs)
+    @category = Category.friendly.find(params[:id])
     render_error errors: "Category not found", status: :not_found unless @category
   end
 
@@ -51,4 +50,3 @@ class CategoriesController < ApplicationController
     render_error(errors: "Unauthorized", status: :unauthorized) unless current_user&.admin?
   end
 end
-

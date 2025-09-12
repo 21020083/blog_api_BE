@@ -3,7 +3,7 @@ class BlogSerializer
   attributes :id, :title, :content,
             :status, :slug, :created_at,
             :updated_at, :get_likes_count,
-            :get_dislikes_count, :user_id, :category_id
+            :get_dislikes_count, :user_id, 
   attribute :root_comments do |object|
     object.comments.root_comments.map do |comment|
       {
@@ -14,5 +14,12 @@ class BlogSerializer
         get_dislikes_count: comment.get_dislikes_count
       }
     end
+  end
+
+  attribute :category do |object|
+    {
+      id: object.category.id,
+      name: object.category.name
+    }
   end
 end

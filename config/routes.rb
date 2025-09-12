@@ -24,7 +24,6 @@ Rails.application.routes.draw do
   end
 
   resources :users, concerns: :blogable
-  get "categories/*slug", to: "categories#show"
   resources :categories, concerns: :blogable
 
   resources :comments, only: [] do

@@ -2,7 +2,7 @@ class CategorySerializer
   include JSONAPI::Serializer
 
   set_type :category
-  attributes :name, :slug, :id  
+  attributes :name, :slug, :id
 
   attribute :children do |category|
     category.children.map do |child|

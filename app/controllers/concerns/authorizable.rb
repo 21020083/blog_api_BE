@@ -2,7 +2,6 @@ module Authorizable
   extend ActiveSupport::Concern
 
   included do
-
     def authorize_owner!(resource = nil)
       allowed = resource.user == current_user
       render_error(errors: "You are not the owner of this resource", status: :unauthorized) unless allowed
@@ -14,4 +13,3 @@ module Authorizable
     end
   end
 end
-
