@@ -49,12 +49,12 @@ class BlogsController < ApplicationController
   private
 
   def set_blog
-    @blog = Blog.by_id_or_slug(params[:id]).first
+    @blog = Blog.friendly.find(params[:id])
     render_error errors: "Blog not found", status: :not_found unless @blog
   end
 
   def blog_params
-    params.require(:blog).permit(:title, :content, :status)
+    params.require(:blog).permit(:title, :content, :status, :category_id)
   end
 
   def set_user

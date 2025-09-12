@@ -8,22 +8,24 @@ Rails.application.routes.draw do
     sessions: "users/sessions",
     registrations: "users/registrations"
   }
-  resources :users do
-    resources :blogs, shallow: true do
-      member do
-        post :upvote
-        post :downvote
-        post :remove_vote
-      end
-      resources :comments, shallow: true do
-        member do
-          post :upvote
-          post :downvote
-          post :remove_vote
-        end
-      end
+
+  concern :votable do
+    member do
+      post :upvote
+      post :downvote
+      post :remove_vote
     end
   end
+
+  concern :blogable do
+    resources :blogs, shallow: true, concerns: :votable do
+      resources :comments, shallow: true, concerns: :votable
+    end
+  end
+
+  resources :users, concerns: :blogable
+  resources :categories, concerns: :blogable
+
   resources :comments, only: [] do
     post :replies, to: "comments#create_reply"
   end

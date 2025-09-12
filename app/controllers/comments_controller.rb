@@ -5,7 +5,7 @@ class CommentsController < ApplicationController
   before_action :authenticate_user!
   before_action :set_blog, only: [ :index, :create ]
   before_action :set_comment, only: [ :show, :update, :destroy, :create_reply ]
-  before_action -> { authorize_owner!(@comment) }, only: [ :update]
+  before_action -> { authorize_owner!(@comment) }, only: [ :update ]
   before_action -> { authorize_admin_owner!(@comment) }, only: [ :destroy ]
 
   skip_before_action :authenticate_user!, only: [ :index, :show ]
