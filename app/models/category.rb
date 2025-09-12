@@ -8,7 +8,6 @@ class Category < ApplicationRecord
 
   validates :name, presence: true, uniqueness: { scope: :parent_category_id }
 
-  before_validation :default_status
 
   scope :root_categories, -> { where(parent_category_id: nil) }
 
@@ -21,14 +20,22 @@ class Category < ApplicationRecord
   end
 
   def all_descendants
-    children.flat_map { |child| [ child ] + child.all_descendants }
+    children.includes(:children).flat_map { |child| [ child ] + child.all_descendants }
   end
 
   def leaf_descendants
-    all_descendants.select { |c| c.children.empty? }
+    leaves = all_descendants.select { |c| c.children.empty? }
+    leaves << self if children.empty?
+    leaves
   end
 
   def blogs_from_leaf_descendants
-    Blog.where(category_id: leaf_descendants.map(&:id))
+    leaf_ids = leaf_descendants.map(&:id)
+    return Blog.none if leaf_ids.empty?
+    Blog.where(category_id: leaf_ids).includes(:category)
+  end
+
+  def is_leaf_category?
+    children.empty?
   end
 end

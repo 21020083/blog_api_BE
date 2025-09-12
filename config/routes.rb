@@ -24,9 +24,27 @@ Rails.application.routes.draw do
   end
 
   resources :users, concerns: :blogable
-  resources :categories, concerns: :blogable
+
+  resources :categories, only: [ :index ], concerns: :blogable do
+    resources :blogs, only: [ :index ], concerns: :votable
+  end
+
+  resources :tags, only: [ :index ], concerns: :blogable do
+    resources :blogs, only: [ :index ], concerns: :votable
+  end
+
+  resources :tags, only: [ :show, :create, :update, :destroy ]
+  resources :categories, only: [ :show, :create, :update, :destroy ]
+
 
   resources :comments, only: [] do
     post :replies, to: "comments#create_reply"
+  end
+
+  resources :analytics, only: [] do
+    collection do
+      get :top_views
+      get :top_likes
+    end
   end
 end

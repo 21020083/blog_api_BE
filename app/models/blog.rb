@@ -2,6 +2,9 @@ class Blog < ApplicationRecord
   belongs_to :user
   belongs_to :category, optional: true
   has_many :comments, dependent: :destroy
+  has_many :blog_views, dependent: :destroy
+  has_many :blog_tags, dependent: :destroy
+  has_many :tags, through: :blog_tags
 
   include Votable
   extend FriendlyId
@@ -16,6 +19,104 @@ class Blog < ApplicationRecord
 
   before_validation :default_status
 
+  def self.top_by_views(range:, user_id: nil, category_id: nil)
+    query = joins(:blog_views)
+            .where(blog_views: { viewed_at: range })
+
+    query = query.where(blog_views: { user_id: user_id }) if user_id.present?
+    query = query.where(category_id: category_id) if category_id.present?
+
+    query
+      .select("blogs.*, COUNT(blog_views.id) AS views_count")
+      .includes(:category, :user)
+      .group("blogs.id")
+      .order("views_count DESC")
+  end
+
+  def self.top_by_likes(range:, user_id: nil, category_id: nil)
+    query = joins("LEFT JOIN votes ON blogs.id = votes.votable_id AND votes.votable_type = 'Blog'")
+            .where(votes: { created_at: range })
+
+    query = query.where("votes.voter_id = ?", user_id) if user_id.present?
+    query = query.where(category_id: category_id) if category_id.present?
+
+    query
+      .select("blogs.*, COUNT(votes.id) AS likes_count")
+      .includes(:category, :user)
+      .group("blogs.id")
+      .order("likes_count DESC")
+  end
+
+  # Helper ranges
+  def self.range_day   = Time.current.beginning_of_day..Time.current.end_of_day
+  def self.range_week  = Time.current.beginning_of_week..Time.current.end_of_week
+  def self.range_month = Time.current.beginning_of_month..Time.current.end_of_month
+  def self.range_year  = Time.current.beginning_of_year..Time.current.end_of_year
+
+  # Scopes analytics views
+  def self.top_by_views_in_day(user_id: nil, category_id: nil)
+    top_by_views(range: range_day, user_id: user_id, category_id: category_id)
+  end
+
+  def self.top_by_views_in_week(user_id: nil, category_id: nil)
+    top_by_views(range: range_week, user_id: user_id, category_id: category_id)
+  end
+
+  def self.top_by_views_in_month(user_id: nil, category_id: nil)
+    top_by_views(range: range_month, user_id: user_id, category_id: category_id)
+  end
+
+  def self.top_by_views_in_year(user_id: nil, category_id: nil)
+    top_by_views(range: range_year, user_id: user_id, category_id: category_id)
+  end
+
+  # -------------------
+  # Scopes analytics likes
+  # -------------------
+
+  def self.top_by_likes_in_day(user_id: nil, category_id: nil)
+    top_by_likes(range: range_day, user_id: user_id, category_id: category_id)
+  end
+
+  def self.top_by_likes_in_week(user_id: nil, category_id: nil)
+    top_by_likes(range: range_week, user_id: user_id, category_id: category_id)
+  end
+
+  def self.top_by_likes_in_month(user_id: nil, category_id: nil)
+    top_by_likes(range: range_month, user_id: user_id, category_id: category_id)
+  end
+
+  def self.top_by_likes_in_year(user_id: nil, category_id: nil)
+    top_by_likes(range: range_year, user_id: user_id, category_id: category_id)
+  end
+
+  def log_view(user = nil)
+    BlogView.create!(blog: self, user: user, viewed_at: Time.current)
+    increment!(:views_count)
+  end
+
+  def total_views
+    views_count
+  end
+
+  def unique_views
+    blog_views.where.not(user_id: nil).select(:user_id).distinct.count
+  end
+
+  def views_in_range(start_time, end_time)
+    blog_views.where(viewed_at: start_time..end_time).count
+  end
+
+  def unique_views_in_range(start_time, end_time)
+    blog_views.where(viewed_at: start_time..end_time)
+              .where.not(user_id: nil)
+              .select(:user_id).distinct.count
+  end
+
+  def log_view(user = nil)
+    BlogView.create!(blog: self, user: user, viewed_at: Time.current)
+  end
+
   private
 
   def default_status
@@ -27,7 +128,7 @@ class Blog < ApplicationRecord
   end
 
   def category_must_be_leaf
-    if category.present? && category.children.any?
+    if category.present? && !category.is_leaf_category?
       errors.add(:category, "must be a leaf category")
     end
   end

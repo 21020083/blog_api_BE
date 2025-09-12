@@ -1,5 +1,6 @@
 class CategoriesController < ApplicationController
-  before_action :authenticate_user!, :is_admin?, only: [ :create, :update, :destroy ]
+  include Authorizable
+  before_action :authenticate_user!, :authorize_admin!, only: [ :create, :update, :destroy ]
   before_action :set_category, only: [ :show, :update, :destroy ]
 
   def index
@@ -9,8 +10,7 @@ class CategoriesController < ApplicationController
   end
 
   def show
-    blogs = @category.blogs_from_leaf_descendants
-    render_success(resource: { category: @category, blogs: blogs })
+    render_success(resource: @category)
   end
 
   def create
@@ -18,7 +18,7 @@ class CategoriesController < ApplicationController
     if category.save
       render_success(resource: category, status: :created)
     else
-      render_error(errors: category.errors.full_messages)
+      render_error(errors: category.errors.full_messages, status: :unprocessable_entity)
     end
   end
 
@@ -26,27 +26,26 @@ class CategoriesController < ApplicationController
     if @category.update(category_params)
       render_success(resource: @category)
     else
-      render_error(errors: @category.errors.full_messages)
+      render_error(errors: @category.errors.full_messages, status: :unprocessable_entity)
     end
   end
 
   def destroy
-    @category.destroy
-    render_success(message: "Category deleted")
+    if @category.destroy
+      render_success(status: :no_content)
+    else
+      render_error(errors: @category.errors.full_messages, status: :unprocessable_entity)
+    end
   end
 
   private
 
   def set_category
-    @category = Category.friendly.find(params[:id])
+    @category = Category.friendly.find_by(id: params[:id])
     render_error errors: "Category not found", status: :not_found unless @category
   end
 
   def category_params
     params.require(:category).permit(:name, :parent_category_id)
-  end
-
-  def is_admin?
-    render_error(errors: "Unauthorized", status: :unauthorized) unless current_user&.admin?
   end
 end
