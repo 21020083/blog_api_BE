@@ -19,6 +19,7 @@ class Blog < ApplicationRecord
 
   before_validation :default_status
 
+  #core top views and likes methods
   def self.top_by_views(range:, user_id: nil, category_id: nil)
     query = joins(:blog_views)
             .where(blog_views: { viewed_at: range })
@@ -48,46 +49,27 @@ class Blog < ApplicationRecord
   end
 
   # Helper ranges
-  def self.range_day   = Time.current.beginning_of_day..Time.current.end_of_day
-  def self.range_week  = Time.current.beginning_of_week..Time.current.end_of_week
-  def self.range_month = Time.current.beginning_of_month..Time.current.end_of_month
-  def self.range_year  = Time.current.beginning_of_year..Time.current.end_of_year
+  RANGES = {
+    "day"   => -> { Time.current.beginning_of_day..Time.current.end_of_day },
+    "week"  => -> { Time.current.beginning_of_week..Time.current.end_of_week },
+    "month" => -> { Time.current.beginning_of_month..Time.current.end_of_month },
+    "year"  => -> { Time.current.beginning_of_year..Time.current.end_of_year }
+  }.freeze
 
-  # Scopes analytics views
-  def self.top_by_views_in_day(user_id: nil, category_id: nil)
-    top_by_views(range: range_day, user_id: user_id, category_id: category_id)
+  #helper methods for top views and likes
+  def self.top_by_views_in(period: "day", user_id: nil, category_id: nil)
+    #get the range for the period
+    range_proc = RANGES[period]
+    raise ArgumentError, "Invalid period" unless range_proc
+
+    top_by_views(range: range_proc.call, user_id: user_id, category_id: category_id)
   end
 
-  def self.top_by_views_in_week(user_id: nil, category_id: nil)
-    top_by_views(range: range_week, user_id: user_id, category_id: category_id)
-  end
+  def self.top_by_likes_in(period: "day", user_id: nil, category_id: nil)
+    range_proc = RANGES[period]
+    raise ArgumentError, "Invalid period" unless range_proc
 
-  def self.top_by_views_in_month(user_id: nil, category_id: nil)
-    top_by_views(range: range_month, user_id: user_id, category_id: category_id)
-  end
-
-  def self.top_by_views_in_year(user_id: nil, category_id: nil)
-    top_by_views(range: range_year, user_id: user_id, category_id: category_id)
-  end
-
-  # -------------------
-  # Scopes analytics likes
-  # -------------------
-
-  def self.top_by_likes_in_day(user_id: nil, category_id: nil)
-    top_by_likes(range: range_day, user_id: user_id, category_id: category_id)
-  end
-
-  def self.top_by_likes_in_week(user_id: nil, category_id: nil)
-    top_by_likes(range: range_week, user_id: user_id, category_id: category_id)
-  end
-
-  def self.top_by_likes_in_month(user_id: nil, category_id: nil)
-    top_by_likes(range: range_month, user_id: user_id, category_id: category_id)
-  end
-
-  def self.top_by_likes_in_year(user_id: nil, category_id: nil)
-    top_by_likes(range: range_year, user_id: user_id, category_id: category_id)
+    top_by_likes(range: range_proc.call, user_id: user_id, category_id: category_id)
   end
 
   def log_view(user = nil)

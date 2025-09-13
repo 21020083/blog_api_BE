@@ -25,12 +25,16 @@ class BlogsController < ApplicationController
   def show
     recent_views = @blog.blog_views.recent
     recent_views = recent_views.where(user_id: current_user.id) if current_user
-
-    if recent_views.empty?
-      @blog.blog_views.create(user: current_user)
-    end
+  
+    @blog.log_view(current_user) if recent_views.empty?
+  
     render_success resource: @blog
+  rescue ActiveRecord::RecordNotFound
+    render_error errors: "Blog not found", status: :not_found
+  rescue StandardError => e
+    render_error errors: e.message, status: :internal_server_error
   end
+  
 
   def create
     @blog = @user.blogs.build(blog_params)
@@ -42,26 +46,24 @@ class BlogsController < ApplicationController
   end
 
   def update
-    if @blog.update(blog_params)
-      render_success resource: @blog
-    else
-      render_error errors: @blog.errors.full_messages, status: :unprocessable_entity
-    end
+    @blog.update!(blog_params)
+    render_success resource: @blog
+  rescue ActiveRecord::RecordInvalid => e
+    render_error errors: e.record.errors.full_messages, status: :unprocessable_entity
   end
-
+  
   def destroy
-    if @blog.destroy
-      render_success
-    else
-      render_error errors: @blog.errors.full_messages, status: :unprocessable_entity
-    end
+    @blog.destroy!
+    render_success
+  rescue ActiveRecord::RecordNotDestroyed => e
+    render_error errors: e.record.errors.full_messages, status: :unprocessable_entity
   end
+  
 
   private
 
   def set_blog
-    @blog = Blog.friendly.find_by(id: params[:id])
-    render_error(errors: "Blog not found", status: :not_found) unless @blog
+    @blog = Blog.friendly.find(params[:id])
   end
 
   def blog_params

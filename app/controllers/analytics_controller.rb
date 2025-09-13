@@ -1,43 +1,27 @@
 class AnalyticsController < ApplicationController
-  before_action :set_blog_info, only: [ :top_views, :top_likes ]
+  PERIODS = %w[day week month year].freeze
 
   def top_views
-    blogs = case @period
-    when "day"
-              Blog.top_by_views_in_day(user_id: @user_id, category_id: @category_id)
-    when "week"
-              Blog.top_by_views_in_week(user_id: @user_id, category_id: @category_id)
-    when "month"
-              Blog.top_by_views_in_month(user_id: @user_id, category_id: @category_id)
-    when "year"
-              Blog.top_by_views_in_year(user_id: @user_id, category_id: @category_id)
-    else
-              render_error(errors: [ "Invalid period" ], status: :bad_request) and return
-    end
-    blogs
-    render_success(resource: blogs, status: :ok)
+    render_top(:views)
   end
 
   def top_likes
-    blogs = case @period
-    when "day"
-              Blog.top_by_likes_in_day(user_id: @user_id, category_id: @category_id)
-    when "week"
-              Blog.top_by_likes_in_week(user_id: @user_id, category_id: @category_id)
-    when "month"
-              Blog.top_by_likes_in_month(user_id: @user_id, category_id: @category_id)
-    when "year"
-              Blog.top_by_likes_in_year(user_id: @user_id, category_id: @category_id)
-    else
-              render_error(errors: [ "Invalid period" ], status: :bad_request) and return
-    end
-    blogs
-    render_success(resource: blogs, status: :ok)
+    render_top(:likes)
   end
 
-  def set_blog_info
-    @period = params[:period] || "day"
-    @user_id = params[:user_id] ||
-    @category_id = params[:category_id]
+  private
+
+  def render_top(metric)
+    period      = params[:period].presence || "day"
+    user_id     = params[:user_id]
+    category_id = params[:category_id]
+    unless PERIODS.include?(period)
+      render_error(errors: ["Invalid period"], status: :bad_request) and return
+    end
+
+    method_name = "top_by_#{metric}_in"
+    blogs = Blog.public_send(method_name, period: period, user_id: user_id, category_id: category_id)
+
+    render_success(resource: blogs, status: :ok)
   end
 end
