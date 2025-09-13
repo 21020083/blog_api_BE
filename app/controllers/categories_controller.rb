@@ -15,6 +15,7 @@ class CategoriesController < ApplicationController
 
   def create
     category = Category.new(category_params)
+    category.current_audit_user = current_user
     if category.save
       render_success(resource: category, status: :created)
     else

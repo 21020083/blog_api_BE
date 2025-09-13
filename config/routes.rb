@@ -47,4 +47,11 @@ Rails.application.routes.draw do
       get :top_likes
     end
   end
+
+  resources :bookmarks, only: [ :index, :create, :destroy ]
+  mount LetterOpenerWeb::Engine, at: "/letter_opener" if Rails.env.development?
+
+  resources :audit_logs, only: [ :index ] do
+    get :user_logs, on: :collection
+  end
 end

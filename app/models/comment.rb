@@ -5,7 +5,7 @@ class Comment < ApplicationRecord
   has_many :replies, class_name: "Comment", foreign_key: :parent_comment_id, dependent: :destroy
 
   include Votable
-
+  include Auditable
   validates :comment_text, presence: true
   validates :user_id, presence: true
   validates :blog_id, presence: true

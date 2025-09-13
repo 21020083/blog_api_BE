@@ -6,7 +6,9 @@ class TagsController < ApplicationController
 
   def index
     tags = Tag.all
-    render_success resource: tags
+    tags = tags.page(params[:page]).per(params[:per_page] || 10)
+    meta = pagination_data(tags)
+    render_success resource: tags, meta: meta
   end
 
   def show
@@ -15,10 +17,11 @@ class TagsController < ApplicationController
 
   def create
     tag = Tag.new(tag_params)
+    tag.current_audit_user = current_user
     if tag.save
-      render_success resource: tag
+      render_success resource: tag, status: :created
     else
-      render_error(errors: tag.errors.full_messages, status: :unprocessable_entity)
+      render_error(errors: tag.errors.full_messages)
     end
   end
 
@@ -26,7 +29,7 @@ class TagsController < ApplicationController
     if @tag.update(tag_params)
       render_success resource: @tag
     else
-      render_error(errors: @tag.errors.full_messages, status: :unprocessable_entity)
+      render_error(errors: @tag.errors.full_messages)
     end
   end
 
@@ -34,7 +37,7 @@ class TagsController < ApplicationController
     if @tag.destroy
       render_success(status: :no_content)
     else
-      render_error(errors: @tag.errors.full_messages, status: :unprocessable_entity)
+      render_error(errors: @tag.errors.full_messages)
     end
   end
 

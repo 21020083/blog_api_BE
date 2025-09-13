@@ -4,7 +4,9 @@ class User < ApplicationRecord
   acts_as_voter
   has_many :blogs, dependent: :destroy
   has_many :comments, dependent: :destroy
-
+  has_many :bookmarks, dependent: :destroy
+  has_many :bookmarked_blogs, through: :bookmarks, source: :blog
+  has_many :audit_logs, dependent: :destroy
   devise :database_authenticatable, :registerable, :recoverable, :validatable, :jwt_authenticatable, jwt_revocation_strategy: self
 
   enum :role, { admin: 0, user: 1 }

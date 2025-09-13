@@ -1,5 +1,6 @@
 class Category < ApplicationRecord
   has_many :blogs
+  include Auditable
   extend FriendlyId
   friendly_id :name, use: [ :slugged, :history ]
 

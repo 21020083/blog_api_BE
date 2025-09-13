@@ -16,7 +16,7 @@ class AnalyticsController < ApplicationController
     user_id     = params[:user_id]
     category_id = params[:category_id]
     unless PERIODS.include?(period)
-      render_error(errors: ["Invalid period"], status: :bad_request) and return
+      render_error(errors: [ "Invalid period" ], status: :bad_request) and return
     end
 
     method_name = "top_by_#{metric}_in"

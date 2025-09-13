@@ -5,8 +5,11 @@ class Blog < ApplicationRecord
   has_many :blog_views, dependent: :destroy
   has_many :blog_tags, dependent: :destroy
   has_many :tags, through: :blog_tags
+  has_many :bookmarks, dependent: :destroy
+  has_many :bookmarkers, through: :bookmarks, source: :user
 
   include Votable
+  include Auditable
   extend FriendlyId
   friendly_id :title, use: [ :slugged, :history ]
 
@@ -19,7 +22,7 @@ class Blog < ApplicationRecord
 
   before_validation :default_status
 
-  #core top views and likes methods
+  # core top views and likes methods
   def self.top_by_views(range:, user_id: nil, category_id: nil)
     query = joins(:blog_views)
             .where(blog_views: { viewed_at: range })
@@ -56,9 +59,9 @@ class Blog < ApplicationRecord
     "year"  => -> { Time.current.beginning_of_year..Time.current.end_of_year }
   }.freeze
 
-  #helper methods for top views and likes
+  # helper methods for top views and likes
   def self.top_by_views_in(period: "day", user_id: nil, category_id: nil)
-    #get the range for the period
+    # get the range for the period
     range_proc = RANGES[period]
     raise ArgumentError, "Invalid period" unless range_proc
 
@@ -97,6 +100,10 @@ class Blog < ApplicationRecord
 
   def log_view(user = nil)
     BlogView.create!(blog: self, user: user, viewed_at: Time.current)
+  end
+
+  def summary(limit: 150)
+    ActionView::Base.full_sanitizer.sanitize(content).truncate(limit, separator: /\s/)
   end
 
   private
