@@ -1,0 +1,10 @@
+<p>Hello <%= @owner.name %>,</p>
+
+<p><%= @voter.name %> <%= @vote_flag ? "liked" : "disliked" %> your 
+   <%= @votable.class.name.downcase %>.</p>
+
+<% if @votable.is_a?(Blog) %>
+  <p>Blog title: <%= @votable.title %></p>
+<% elsif @votable.is_a?(Comment) %>
+  <p>Comment: <%= @votable.comment_text %></p>
+<% end %>

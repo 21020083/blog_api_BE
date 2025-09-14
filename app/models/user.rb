@@ -1,12 +1,16 @@
 class User < ApplicationRecord
   include Devise::JWT::RevocationStrategies::JTIMatcher
+  extend FriendlyId
+  friendly_id :name, use: [ :slugged, :history ]
 
   acts_as_voter
   has_many :blogs, dependent: :destroy
   has_many :comments, dependent: :destroy
-
+  has_many :bookmarks, dependent: :destroy
+  has_many :bookmarked_blogs, through: :bookmarks, source: :blog
+  has_many :audit_logs, dependent: :destroy
+  has_many :notifications, as: :recipient,class_name: 'Noticed::Notification', dependent: :destroy
   devise :database_authenticatable, :registerable, :recoverable, :validatable, :jwt_authenticatable, jwt_revocation_strategy: self
-
   enum :role, { admin: 0, user: 1 }
 
   validates :name, presence: true, length: { minimum: 3 }
@@ -14,7 +18,6 @@ class User < ApplicationRecord
   validates :role, presence: true, inclusion: { in: roles.keys }
   validates :jti, presence: true, uniqueness: true
   validates :password, confirmation: true, length: { minimum: 6 }, if: :password_required?
-  validate :role_changed_allowed, on: :update
 
   before_validation :default_role, :set_default_name
   before_validation :set_jti, on: :create
@@ -55,9 +58,4 @@ class User < ApplicationRecord
     new_record? || password.present?
   end
 
-  def role_changed_allowed
-    if role_changed? && !User.current_admin?
-      errors.add(:role, "can only be changed by admin")
-    end
-  end
 end

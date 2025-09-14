@@ -1,0 +1,13 @@
+<p>Xin chào <%= @recipient.try(:name) || @recipient.email %>,</p>
+
+<% if @blog %>
+  <p>Bạn có một bình luận mới trên blog "<%= @blog.title %>":</p>
+<% else %>
+  <p>Bạn có một bình luận mới trên blog của bạn:</p>
+<% end %>
+
+<p><strong><%= @comment_content %></strong></p>
+
+<% if @blog %>
+  <p>Xem chi tiết: <%= blog_url(@blog) %></p>
+<% end %>
