@@ -1,6 +1,7 @@
 class CommentsController < ApplicationController
   include VotableController
   include Authorizable
+  include ErrorHandler
 
   before_action :authenticate_user!
   before_action :set_blog, only: [ :index, :create ]
@@ -54,6 +55,12 @@ class CommentsController < ApplicationController
 
   def destroy
     old_comment = @comment
+    #  # Step 1: Delete records from ActionText::RichText (if you have rich text content)
+    ActionText::RichText.where(record_type: 'Comment', record_id: @comment.id).destroy_all
+    # Step 2: Manually delete associated records from noticed_events and noticed_notifications tables
+    Noticed::Event.where(record_type: 'Comment', record_id: @comment.id ).destroy_all
+    Noticed::Notification.where( recipient_type: 'User', recipient_id: current_user.id, event_id: @comment.id ).destroy_all
+  
     if @comment.destroy
       render_success resource: old_comment
     else
@@ -64,8 +71,7 @@ class CommentsController < ApplicationController
   private
 
   def set_blog
-    @blog = Blog.by_id_or_slug(params[:blog_id]).first
-    render_error errors: "Blog not found", status: :not_found unless @blog
+    @blog = Blog.friendly.find(params[:blog_id])
   end
 
   def set_comment

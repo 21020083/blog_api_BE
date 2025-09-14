@@ -18,12 +18,13 @@ Rails.application.routes.draw do
   end
 
   concern :blogable do
-    resources :blogs, shallow: true, concerns: :votable do
+    resources :blogs, only: [ :index, :show ], shallow: true, concerns: :votable do
       resources :comments, shallow: true, concerns: :votable
     end
   end
-
   resources :users, concerns: :blogable
+  resources :blogs, shallow: true, concerns: :votable
+
 
   resources :categories, only: [ :index ], concerns: :blogable do
     resources :blogs, only: [ :index ], concerns: :votable
@@ -49,9 +50,7 @@ Rails.application.routes.draw do
   end
 
   resources :bookmarks, only: [ :index, :create, :destroy ]
-  mount LetterOpenerWeb::Engine, at: "/letter_opener" if Rails.env.development?
+  mount LetterOpenerWeb::Engine, at: "/letter_opener"
 
-  resources :audit_logs, only: [ :index ] do
-    get :user_logs, on: :collection
-  end
+  resources :audit_logs, only: [:index, :show, :destroy]
 end

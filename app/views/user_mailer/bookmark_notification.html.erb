@@ -1,0 +1,14 @@
+<!-- app/views/user_mailer/bookmark_notification.html.erb -->
+<h1>New Bookmark Notification</h1>
+
+<p>
+  Người dùng <strong><%= @bookmark.user.name %></strong> đã bookmark blog của bạn:
+</p>
+
+<p>
+  <strong><%= @bookmark.blog.title %></strong>
+</p>
+
+<p>
+  <a href="<%= blog_url(@bookmark.blog) %>">Xem blog</a>
+</p>

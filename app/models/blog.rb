@@ -7,6 +7,9 @@ class Blog < ApplicationRecord
   has_many :tags, through: :blog_tags
   has_many :bookmarks, dependent: :destroy
   has_many :bookmarkers, through: :bookmarks, source: :user
+  has_many :notifications, through: :user, dependent: :destroy
+  has_many :notification_mentions, through: :user, dependent: :destroy
+  has_noticed_notifications model_name: 'Noticed::Notification'
 
   include Votable
   include Auditable
