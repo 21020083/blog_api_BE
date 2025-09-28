@@ -9,10 +9,11 @@ class Blog < ApplicationRecord
   has_many :bookmarkers, through: :bookmarks, source: :user
   has_many :notifications, through: :user, dependent: :destroy
   has_many :notification_mentions, through: :user, dependent: :destroy
-  has_noticed_notifications model_name: 'Noticed::Notification'
+  has_noticed_notifications model_name: "Noticed::Notification"
 
   include Votable
   include Auditable
+  include AnalyticsOptimized
   extend FriendlyId
   friendly_id :title, use: [ :slugged, :history ]
 

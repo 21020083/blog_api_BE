@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_09_14_082305) do
+ActiveRecord::Schema[8.0].define(version: 2025_09_28_070722) do
   create_table "audit_logs", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.bigint "user_id", null: false
     t.string "action", null: false
@@ -39,7 +39,9 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_14_082305) do
     t.datetime "updated_at", null: false
     t.index ["blog_id", "user_id", "viewed_at"], name: "index_blog_views_on_blog_id_and_user_id_and_viewed_at"
     t.index ["blog_id"], name: "index_blog_views_on_blog_id"
+    t.index ["user_id", "viewed_at"], name: "index_blog_views_on_user_id_and_viewed_at"
     t.index ["user_id"], name: "index_blog_views_on_user_id"
+    t.index ["viewed_at", "blog_id"], name: "index_blog_views_on_viewed_at_and_blog_id"
   end
 
   create_table "blogs", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
@@ -52,8 +54,10 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_14_082305) do
     t.datetime "updated_at", null: false
     t.bigint "category_id"
     t.integer "views_count", default: 0, null: false
+    t.index ["category_id", "views_count"], name: "index_blogs_on_category_id_and_views_count"
     t.index ["category_id"], name: "index_blogs_on_category_id"
     t.index ["slug"], name: "index_blogs_on_slug", unique: true
+    t.index ["status", "views_count"], name: "index_blogs_on_status_and_views_count"
     t.index ["user_id"], name: "index_blogs_on_user_id"
   end
 
@@ -160,7 +164,9 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_14_082305) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["votable_id", "votable_type", "vote_scope"], name: "index_votes_on_votable_id_and_votable_type_and_vote_scope"
+    t.index ["votable_type", "votable_id", "created_at"], name: "index_votes_on_votable_and_created_at"
     t.index ["votable_type", "votable_id"], name: "index_votes_on_votable"
+    t.index ["voter_id", "voter_type", "created_at"], name: "index_votes_on_voter_and_created_at"
     t.index ["voter_id", "voter_type", "vote_scope"], name: "index_votes_on_voter_id_and_voter_type_and_vote_scope"
     t.index ["voter_type", "voter_id"], name: "index_votes_on_voter"
   end

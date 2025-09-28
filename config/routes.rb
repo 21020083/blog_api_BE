@@ -46,11 +46,12 @@ Rails.application.routes.draw do
     collection do
       get :top_views
       get :top_likes
+      get :summary
     end
   end
 
   resources :bookmarks, only: [ :index, :create, :destroy ]
   mount LetterOpenerWeb::Engine, at: "/letter_opener"
 
-  resources :audit_logs, only: [:index, :show, :destroy]
+  resources :audit_logs, only: [ :index, :show, :destroy ]
 end
