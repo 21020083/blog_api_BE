@@ -1,198 +1,337 @@
 require 'rails_helper'
-require 'benchmark'
 
-RSpec.describe "Analytics Performance Tests", type: :request do
-  let(:user) { create(:user) }
-  let(:category) { create(:category) }
-  let!(:blogs) { create_list(:blog, 1000, user: user, category: category, status: :published) }
+RSpec.describe "Analytics Performance Tests", type: :model do
+  describe "AnalyticsService performance with large datasets" do
+    let!(:users) { create_list(:user, 500) }
+    let!(:categories) { create_list(:category, 10) }
+    let!(:blogs) { create_list(:blog, 100, category: categories.sample) }
 
-  # Tạo 100,000 blog views để test performance
-  let!(:blog_views) do
-    puts "Creating 100,000 blog views for performance testing..."
+    before do
+      puts "Setting up analytics performance test data..."
 
-    # Tạo views trong batch để tối ưu performance
-    views_data = []
-    blogs.each do |blog|
-      # Mỗi blog có khoảng 100 views
-      (1..100).each do |i|
-        views_data << {
-          blog_id: blog.id,
-          user_id: user.id,
-          viewed_at: rand(30.days.ago..Time.current),
-          created_at: Time.current,
-          updated_at: Time.current
-        }
+      # Create 50,000 blog views across all blogs
+      blogs.each do |blog|
+        views_count = rand(100..1000)
+        views_data = []
+
+        views_count.times do
+          user = users.sample
+          views_data << {
+            blog_id: blog.id,
+            user_id: user.id,
+            viewed_at: rand(365.days).seconds.ago,
+            created_at: Time.current,
+            updated_at: Time.current
+          }
+        end
+
+        BlogView.insert_all(views_data) if views_data.any?
+        blog.update!(views_count: views_count)
+      end
+
+      # Create votes for blogs
+      blogs.each do |blog|
+        vote_count = rand(10..100)
+        vote_count.times do
+          user = users.sample
+          blog.liked_by(user)
+        end
+      end
+
+      puts "Created analytics test data with #{BlogView.count} views and #{ActiveRecord::Base.connection.execute('SELECT COUNT(*) FROM votes').first[0]} votes"
+    end
+
+    describe "top views analytics" do
+      it "efficiently gets top blogs by views for day period" do
+        service = AnalyticsService.new(period: "day", limit: 20)
+
+        expect {
+          service.cached_top_views
+        }.to complete_within(2.seconds)
+
+        top_views = service.cached_top_views
+        expect(top_views.length).to be <= 20
+      end
+
+      it "efficiently gets top blogs by views for week period" do
+        service = AnalyticsService.new(period: "week", limit: 20)
+
+        expect {
+          service.cached_top_views
+        }.to complete_within(2.seconds)
+
+        top_views = service.cached_top_views
+        expect(top_views.length).to be <= 20
+      end
+
+      it "efficiently gets top blogs by views for month period" do
+        service = AnalyticsService.new(period: "month", limit: 20)
+
+        expect {
+          service.cached_top_views
+        }.to complete_within(2.seconds)
+
+        top_views = service.cached_top_views
+        expect(top_views.length).to be <= 20
+      end
+
+      it "efficiently gets top blogs by views for year period" do
+        service = AnalyticsService.new(period: "year", limit: 20)
+
+        expect {
+          service.cached_top_views
+        }.to complete_within(2.seconds)
+
+        top_views = service.cached_top_views
+        expect(top_views.length).to be <= 20
+      end
+
+      it "efficiently filters top views by category" do
+        category = categories.first
+        service = AnalyticsService.new(period: "week", category_id: category.id, limit: 20)
+
+        expect {
+          service.cached_top_views
+        }.to complete_within(2.seconds)
+
+        top_views = service.cached_top_views
+        expect(top_views.length).to be <= 20
+        # All returned blogs should belong to the specified category
+        top_views.each do |blog|
+          expect(blog.category_id).to eq(category.id)
+        end
+      end
+
+      it "efficiently filters top views by user" do
+        user = users.first
+        service = AnalyticsService.new(period: "week", user_id: user.id, limit: 20)
+
+        expect {
+          service.cached_top_views
+        }.to complete_within(2.seconds)
+
+        top_views = service.cached_top_views
+        expect(top_views.length).to be <= 20
       end
     end
 
-    # Insert batch để tối ưu
-    BlogView.insert_all(views_data)
-    puts "Created #{BlogView.count} blog views"
-  end
+    describe "top likes analytics" do
+      it "efficiently gets top blogs by likes for day period" do
+        service = AnalyticsService.new(period: "day", limit: 20)
 
-  describe "Performance Tests" do
-    context "Top Views Analytics" do
-      it "should handle 100k views efficiently" do
-        puts "\n=== Testing Top Views Performance ==="
+        expect {
+          service.cached_top_likes
+        }.to complete_within(2.seconds)
 
-        # Test different periods
+        top_likes = service.cached_top_likes
+        expect(top_likes.length).to be <= 20
+      end
+
+      it "efficiently gets top blogs by likes for week period" do
+        service = AnalyticsService.new(period: "week", limit: 20)
+
+        expect {
+          service.cached_top_likes
+        }.to complete_within(2.seconds)
+
+        top_likes = service.cached_top_likes
+        expect(top_likes.length).to be <= 20
+      end
+
+      it "efficiently gets top blogs by likes for month period" do
+        service = AnalyticsService.new(period: "month", limit: 20)
+
+        expect {
+          service.cached_top_likes
+        }.to complete_within(2.seconds)
+
+        top_likes = service.cached_top_likes
+        expect(top_likes.length).to be <= 20
+      end
+
+      it "efficiently gets top blogs by likes for year period" do
+        service = AnalyticsService.new(period: "year", limit: 20)
+
+        expect {
+          service.cached_top_likes
+        }.to complete_within(2.seconds)
+
+        top_likes = service.cached_top_likes
+        expect(top_likes.length).to be <= 20
+      end
+
+      it "efficiently filters top likes by category" do
+        category = categories.first
+        service = AnalyticsService.new(period: "week", category_id: category.id, limit: 20)
+
+        expect {
+          service.cached_top_likes
+        }.to complete_within(2.seconds)
+
+        top_likes = service.cached_top_likes
+        expect(top_likes.length).to be <= 20
+        # All returned blogs should belong to the specified category
+        top_likes.each do |blog|
+          expect(blog.category_id).to eq(category.id)
+        end
+      end
+    end
+
+    describe "analytics summary" do
+      it "efficiently generates analytics summary" do
+        service = AnalyticsService.new(period: "week", limit: 10)
+
+        expect {
+          service.analytics_summary
+        }.to complete_within(3.seconds)
+
+        summary = service.analytics_summary
+        expect(summary).to be_a(Hash)
+        expect(summary.keys).to include(:top_views, :top_likes, :total_blogs, :total_views, :total_likes)
+      end
+
+      it "efficiently generates analytics summary for different periods" do
         periods = %w[day week month year]
 
         periods.each do |period|
-          time = Benchmark.measure do
-            get "/analytics/top_views", params: { period: period }
-          end
+          service = AnalyticsService.new(period: period, limit: 10)
 
-          puts "#{period.capitalize}: #{time.real.round(3)}s"
-          expect(response).to have_http_status(:success)
-          expect(json_response['data']).to be_an(Array)
+          expect {
+            service.analytics_summary
+          }.to complete_within(3.seconds)
+
+          summary = service.analytics_summary
+          expect(summary).to be_a(Hash)
         end
-      end
-
-      it "should handle pagination efficiently" do
-        puts "\n=== Testing Pagination Performance ==="
-
-        time = Benchmark.measure do
-          get "/analytics/top_views", params: { page: 1, per_page: 50 }
-        end
-
-        puts "Pagination (50 items): #{time.real.round(3)}s"
-        expect(response).to have_http_status(:success)
-        expect(json_response['data'].length).to be <= 50
-      end
-
-      it "should handle filtering by category efficiently" do
-        puts "\n=== Testing Category Filter Performance ==="
-
-        time = Benchmark.measure do
-          get "/analytics/top_views", params: { category_id: category.id }
-        end
-
-        puts "Category filter: #{time.real.round(3)}s"
-        expect(response).to have_http_status(:success)
-        expect(json_response['data']).to be_an(Array)
       end
     end
 
-    context "Database Query Analysis" do
-      it "should show query count and time" do
-        puts "\n=== Database Query Analysis ==="
+    describe "caching performance" do
+      it "demonstrates caching effectiveness" do
+        service = AnalyticsService.new(period: "week", limit: 20)
 
-        # Enable query logging
-        ActiveRecord::Base.logger = Logger.new(STDOUT)
+        # First call - should be slower (cache miss)
+        start_time = Time.current
+        service.cached_top_views
+        first_call_time = Time.current - start_time
 
-        query_count = 0
-        ActiveSupport::Notifications.subscribe("sql.active_record") do |*args|
-          query_count += 1
-        end
+        # Second call - should be faster (cache hit)
+        start_time = Time.current
+        service.cached_top_views
+        second_call_time = Time.current - start_time
 
-        time = Benchmark.measure do
-          get "/analytics/top_views", params: { period: "month" }
-        end
-
-        puts "Total queries: #{query_count}"
-        puts "Total time: #{time.real.round(3)}s"
-        puts "Average query time: #{(time.real / query_count * 1000).round(2)}ms" if query_count > 0
-
-        expect(response).to have_http_status(:success)
-
-        # Disable query logging
-        ActiveRecord::Base.logger = nil
+        # Cache hit should be significantly faster
+        expect(second_call_time).to be < (first_call_time * 0.5)
       end
-    end
 
-    context "Memory Usage Analysis" do
-      it "should monitor memory usage" do
-        puts "\n=== Memory Usage Analysis ==="
+      it "handles concurrent requests efficiently" do
+        service = AnalyticsService.new(period: "week", limit: 20)
 
-        # Get initial memory usage
-        initial_memory = `ps -o rss= -p #{Process.pid}`.to_i
-
-        time = Benchmark.measure do
-          get "/analytics/top_views", params: { period: "year" }
-        end
-
-        # Get final memory usage
-        final_memory = `ps -o rss= -p #{Process.pid}`.to_i
-        memory_used = final_memory - initial_memory
-
-        puts "Memory used: #{memory_used} KB"
-        puts "Time taken: #{time.real.round(3)}s"
-
-        expect(response).to have_http_status(:success)
-      end
-    end
-
-    context "Concurrent Requests Test" do
-      it "should handle multiple concurrent requests" do
-        puts "\n=== Concurrent Requests Test ==="
-
+        # Simulate concurrent requests
         threads = []
         results = []
 
-        # Simulate 10 concurrent requests
-        10.times do |i|
+        5.times do
           threads << Thread.new do
             start_time = Time.current
-            get "/analytics/top_views", params: { period: "week" }
+            result = service.cached_top_views
             end_time = Time.current
-
-            results << {
-              thread_id: i,
-              response_time: (end_time - start_time).round(3),
-              status: response.status
-            }
+            results << { result: result, time: end_time - start_time }
           end
         end
 
         threads.each(&:join)
 
-        avg_response_time = results.sum { |r| r[:response_time] } / results.length
-        max_response_time = results.max_by { |r| r[:response_time] }[:response_time]
+        # All requests should complete within reasonable time
+        results.each do |result|
+          expect(result[:time]).to be < 3.seconds
+          expect(result[:result]).to be_an(Array)
+        end
+      end
+    end
 
-        puts "Average response time: #{avg_response_time.round(3)}s"
-        puts "Max response time: #{max_response_time.round(3)}s"
-        puts "All requests successful: #{results.all? { |r| r[:status] == 200 }}"
+    describe "memory usage optimization" do
+      it "does not load excessive data into memory" do
+        service = AnalyticsService.new(period: "week", limit: 50)
 
-        expect(results.all? { |r| r[:status] == 200 }).to be true
+        # Monitor memory usage
+        initial_memory = `ps -o rss= -p #{Process.pid}`.to_i
+
+        service.cached_top_views
+
+        final_memory = `ps -o rss= -p #{Process.pid}`.to_i
+        memory_increase = final_memory - initial_memory
+
+        # Memory increase should be reasonable (less than 50MB)
+        expect(memory_increase).to be < 50_000 # KB
+      end
+
+      it "efficiently handles large limit values" do
+        service = AnalyticsService.new(period: "week", limit: 1000)
+
+        expect {
+          service.cached_top_views
+        }.to complete_within(5.seconds)
+
+        top_views = service.cached_top_views
+        expect(top_views.length).to be <= 1000
       end
     end
   end
 
-  describe "Performance Benchmarks" do
-    it "should meet performance requirements" do
-      puts "\n=== Performance Benchmarks ==="
+  describe "Edge cases and stress tests" do
+    it "handles empty datasets gracefully" do
+      # Clear all data
+      BlogView.delete_all
+      Vote.delete_all
+      Blog.update_all(views_count: 0)
 
-      # Benchmark requirements
-      requirements = {
-        "day" => 0.1,    # 100ms
-        "week" => 0.2,   # 200ms
-        "month" => 0.5,  # 500ms
-        "year" => 1.0    # 1s
-      }
+      service = AnalyticsService.new(period: "week", limit: 20)
 
-      results = {}
+      expect {
+        service.cached_top_views
+      }.to complete_within(1.second)
 
-      requirements.each do |period, max_time|
-        time = Benchmark.measure do
-          get "/analytics/top_views", params: { period: period }
-        end
+      top_views = service.cached_top_views
+      expect(top_views).to be_empty
+    end
 
-        results[period] = time.real
-        puts "#{period.capitalize}: #{time.real.round(3)}s (max: #{max_time}s) - #{time.real <= max_time ? 'PASS' : 'FAIL'}"
+    it "handles very recent data efficiently" do
+      # Create views only from the last hour
+      recent_blog = create(:blog)
+      recent_users = create_list(:user, 10)
 
-        expect(response).to have_http_status(:success)
+      recent_users.each do |user|
+        create(:blog_view, blog: recent_blog, user: user, viewed_at: rand(1.hour).seconds.ago)
       end
 
-      # Check if all requirements are met
-      failed_periods = results.select { |period, time| time > requirements[period] }
+      service = AnalyticsService.new(period: "day", limit: 20)
 
-      if failed_periods.any?
-        puts "\n❌ Performance requirements not met for: #{failed_periods.keys.join(', ')}"
-        puts "Consider implementing optimizations like caching, database indexes, or query optimization."
-      else
-        puts "\n✅ All performance requirements met!"
+      expect {
+        service.cached_top_views
+      }.to complete_within(1.second)
+
+      top_views = service.cached_top_views
+      expect(top_views).to include(recent_blog)
+    end
+
+    it "handles very old data efficiently" do
+      # Create views only from a year ago
+      old_blog = create(:blog)
+      old_users = create_list(:user, 10)
+
+      old_users.each do |user|
+        create(:blog_view, blog: old_blog, user: user, viewed_at: 1.year.ago + rand(1.day).seconds)
       end
+
+      service = AnalyticsService.new(period: "year", limit: 20)
+
+      expect {
+        service.cached_top_views
+      }.to complete_within(1.second)
+
+      top_views = service.cached_top_views
+      expect(top_views).to include(old_blog)
     end
   end
 end

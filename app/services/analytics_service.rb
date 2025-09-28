@@ -11,69 +11,64 @@ class AnalyticsService
   end
 
   def top_views
-    # Sử dụng method có sẵn trong Blog model
-    Blog.top_by_views_in(
-      period: @period,
-      user_id: @user_id,
-      category_id: @category_id
-    ).where(status: "published").limit(@limit)
+    stat = get_analytics_stat
+    return Blog.none unless stat
+
+    # Return Blog relation directly from AnalyticsStat
+    stat.top_views(@limit)
   end
 
   def top_likes
-    # Sử dụng method có sẵn trong Blog model
-    Blog.top_by_likes_in(
-      period: @period,
-      user_id: @user_id,
-      category_id: @category_id
-    ).where(status: "published").limit(@limit)
+    stat = get_analytics_stat
+    return Blog.none unless stat
+
+    # Return Blog relation directly from AnalyticsStat
+    stat.top_likes(@limit)
   end
 
   def cached_top_views
-    cache_key = "analytics:top_views:#{@period}:#{@user_id}:#{@category_id}:#{@limit}"
-
-    Rails.cache.fetch(cache_key, expires_in: cache_expiry) do
-      top_views.to_a
-    end
+    top_views
   end
 
   def cached_top_likes
-    cache_key = "analytics:top_likes:#{@period}:#{@user_id}:#{@category_id}:#{@limit}"
-
-    Rails.cache.fetch(cache_key, expires_in: cache_expiry) do
-      top_likes.to_a
-    end
-  end
-
-  def analytics_summary
-    {
-      total_blogs: Blog.published.count,
-      total_views: Blog.published.sum(:views_count),
-      total_likes: Blog.published.joins("LEFT JOIN votes ON blogs.id = votes.votable_id AND votes.votable_type = 'Blog'").count,
-      top_blog: Blog.published.order(views_count: :desc).first,
-      period: @period,
-      generated_at: Time.current
-    }
+    top_likes
   end
 
   def invalidate_cache!
-    # Invalidate all analytics cache when new views/likes are added
-    Rails.cache.delete_matched("analytics:*")
+    # Invalidate analytics stats for current period
+    period_date = get_period_date
+    AnalyticsStat.where(
+      period: @period,
+      period_date: period_date,
+      user_id: @user_id,
+      category_id: @category_id
+    ).delete_all
   end
 
   private
 
-  def cache_expiry
+  def get_analytics_stat
+    period_date = get_period_date
+    AnalyticsStat.find_or_calculate(
+      period: @period,
+      period_date: period_date,
+      user_id: @user_id,
+      category_id: @category_id
+    )
+  end
+
+  def get_period_date
     case @period
     when "day"
-      1.hour
+      Date.current
     when "week"
-      6.hours
+      Date.current.beginning_of_week.to_date
     when "month"
-      1.day
+      Date.current.beginning_of_month.to_date
     when "year"
-      1.week
+      Date.current.beginning_of_year.to_date
     else
-      1.hour
+      Date.current
     end
   end
 end

@@ -1,5 +1,5 @@
 #!/usr/bin/env ruby
-# Script để setup test data và chạy performance tests
+# Script to setup test data and run performance tests
 
 require_relative '../config/environment'
 

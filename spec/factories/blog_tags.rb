@@ -1,6 +1,6 @@
 FactoryBot.define do
   factory :blog_tag do
-    blog { nil }
-    tag { nil }
+    blog
+    tag
   end
 end

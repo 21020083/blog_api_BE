@@ -11,6 +11,28 @@
 # It's strongly recommended that you check this file into your version control system.
 
 ActiveRecord::Schema[8.0].define(version: 2025_09_28_070722) do
+  create_table "analytics_stats", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
+    t.string "period", limit: 10, null: false
+    t.date "period_date", null: false
+    t.bigint "user_id"
+    t.bigint "category_id"
+    t.json "top_views_data", null: false
+    t.json "top_likes_data", null: false
+    t.json "summary_data", null: false
+    t.integer "total_blogs_count", default: 0
+    t.integer "total_views_count", default: 0
+    t.integer "total_likes_count", default: 0
+    t.integer "data_version", default: 1
+    t.datetime "calculated_at", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["calculated_at"], name: "index_analytics_stats_on_calculated_at"
+    t.index ["period", "category_id", "period_date"], name: "index_analytics_stats_on_period_category_date"
+    t.index ["period", "period_date", "user_id", "category_id"], name: "index_analytics_stats_unique", unique: true
+    t.index ["period", "period_date"], name: "index_analytics_stats_on_period_and_date"
+    t.index ["period", "user_id", "period_date"], name: "index_analytics_stats_on_period_user_date"
+  end
+
   create_table "audit_logs", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.bigint "user_id", null: false
     t.string "action", null: false

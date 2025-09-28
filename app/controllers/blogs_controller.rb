@@ -3,29 +3,29 @@ class BlogsController < ApplicationController
   include Authorizable
   include ErrorHandler
 
-  before_action :authenticate_user!, only: [:create, :update, :destroy]
-  before_action :set_blog, only: [:show, :update, :destroy]
-  before_action :set_category, :set_tags, :set_user, only: [:index]
+  before_action :authenticate_user!, only: [ :create, :update, :destroy ]
+  before_action :set_blog, only: [ :show, :update, :destroy ]
+  before_action :set_category, :set_tags, :set_user, only: [ :index ]
 
-  before_action -> { authorize_owner!(@blog) }, only: [:update]
-  before_action -> { authorize_admin_owner!(@blog) }, only: [:destroy]
+  before_action -> { authorize_owner!(@blog) }, only: [ :update ]
+  before_action -> { authorize_admin_owner!(@blog) }, only: [ :destroy ]
 
   def index
     blogs = Blog.all
-  
+
     blogs = blogs.where(user_id: @user.id) if @user.present?
-  
+
     blogs = blogs.where(category_id: @category.id) if @category.present?
-  
+
     if @tags.present? && @tags.any?
       blogs = blogs.joins(:tags).where(tags: { id: @tags.pluck(:id) }).distinct
     elsif params[:tag_ids].present? && (!@tags.present? || @tags.empty?)
       blogs = Blog.none
     end
-  
+
     blogs = blogs.page(params[:page]).per(params[:per_page] || 10)
     meta = pagination_data(blogs)
-  
+
     render_success resource: blogs, meta: meta
   end
 

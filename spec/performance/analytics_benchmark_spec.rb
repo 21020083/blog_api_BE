@@ -6,7 +6,7 @@ RSpec.describe "Analytics Performance Benchmark", type: :request do
   let(:category) { create(:category) }
   let!(:blogs) { create_list(:blog, 1000, user: user, category: category, status: :published) }
 
-  # Tạo 100,000 blog views
+  # Create 100,000 blog views
   let!(:blog_views) do
     puts "Setting up benchmark data..."
 

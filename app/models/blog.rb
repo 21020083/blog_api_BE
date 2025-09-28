@@ -28,17 +28,30 @@ class Blog < ApplicationRecord
 
   # core top views and likes methods
   def self.top_by_views(range:, user_id: nil, category_id: nil)
-    query = joins(:blog_views)
-            .where(blog_views: { viewed_at: range })
+    # Optimized version using views_count column for better performance
+    query = where(status: :published)
 
-    query = query.where(blog_views: { user_id: user_id }) if user_id.present?
-    query = query.where(category_id: category_id) if category_id.present?
+    # If we need real-time count within range, use the complex query
+    if range.present? && (range.begin != Time.current.beginning_of_day || range.end != Time.current.end_of_day)
+      query = joins(:blog_views)
+              .where(blog_views: { viewed_at: range })
 
-    query
-      .select("blogs.*, COUNT(blog_views.id) AS views_count")
-      .includes(:category, :user)
-      .group("blogs.id")
-      .order("views_count DESC")
+      query = query.where(blog_views: { user_id: user_id }) if user_id.present?
+      query = query.where(category_id: category_id) if category_id.present?
+
+      query
+        .select("blogs.*, COUNT(blog_views.id) AS views_count")
+        .includes(:category, :user)
+        .group("blogs.id")
+        .order("views_count DESC")
+    else
+      # Use cached views_count for better performance
+      query = query.where(category_id: category_id) if category_id.present?
+
+      query
+        .includes(:category, :user)
+        .order(views_count: :desc)
+    end
   end
 
   def self.top_by_likes(range:, user_id: nil, category_id: nil)
@@ -70,6 +83,34 @@ class Blog < ApplicationRecord
     raise ArgumentError, "Invalid period" unless range_proc
 
     top_by_views(range: range_proc.call, user_id: user_id, category_id: category_id)
+  end
+
+  # Optimized methods for better performance
+  def self.top_views_cached(limit: 10, category_id: nil)
+    query = where(status: :published)
+    query = query.where(category_id: category_id) if category_id.present?
+
+    query
+      .includes(:category, :user)
+      .order(views_count: :desc)
+      .limit(limit)
+  end
+
+  def self.top_views_realtime(limit: 10, hours: 24, category_id: nil)
+    start_time = hours.hours.ago
+
+    query = joins(:blog_views)
+            .where(blog_views: { viewed_at: start_time.. })
+            .where(status: :published)
+
+    query = query.where(category_id: category_id) if category_id.present?
+
+    query
+      .select("blogs.*, COUNT(blog_views.id) AS recent_views_count")
+      .includes(:category, :user)
+      .group("blogs.id")
+      .order("recent_views_count DESC")
+      .limit(limit)
   end
 
   def self.top_by_likes_in(period: "day", user_id: nil, category_id: nil)

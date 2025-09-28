@@ -10,7 +10,7 @@ class AnalyticsController < ApplicationController
   end
 
   def summary
-    period = params[:period].presence || "day"
+    period = params[:period].presence || "week"
     limit = params[:limit]&.to_i || 10
 
     unless PERIODS.include?(period)
@@ -25,7 +25,7 @@ class AnalyticsController < ApplicationController
   private
 
   def render_top(metric)
-    period = params[:period].presence || "day"
+    period = params[:period].presence || "week"
     user_id = params[:user_id]
     category_id = params[:category_id]
     limit = params[:limit]&.to_i || 50
@@ -34,7 +34,6 @@ class AnalyticsController < ApplicationController
       render_error(errors: [ "Invalid period" ], status: :bad_request) and return
     end
 
-    # Use optimized service
     service = AnalyticsService.new(
       period: period,
       user_id: user_id,
@@ -49,6 +48,8 @@ class AnalyticsController < ApplicationController
               service.cached_top_likes
     end
 
-    render_success(resource: blogs, status: :ok)
+    meta = pagination_data(blogs)
+
+    render_success(resource: blogs, meta: meta, status: :ok)
   end
 end
