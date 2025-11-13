@@ -50,11 +50,11 @@ class AnalyticsStat < ApplicationRecord
         user_id: user_id,
         category_id: category_id,
         top_views_data: stats_data[:top_views],
-        top_likes_data: stats_data[:top_likes],
+        top_likes_data: [],  # Empty for views-only
         summary_data: stats_data[:summary],
         total_blogs_count: stats_data[:summary][:total_blogs],
         total_views_count: stats_data[:summary][:total_views],
-        total_likes_count: stats_data[:summary][:total_likes],
+        total_likes_count: 0,  # Zero for views-only
         calculated_at: Time.current
       )
     end
@@ -68,14 +68,36 @@ class AnalyticsStat < ApplicationRecord
   # Instance methods
   def fresh?(max_age = nil)
     max_age ||= case period
-    when "day" then 1.hour
-    when "week" then 6.hours
-    when "month" then 1.day
-    when "year" then 1.week
-    else 1.hour
+    when "day" then 2.hours      # Cache 2 giờ cho day (real-time hơn)
+    when "week" then 6.hours     # Cache 6 giờ cho week
+    when "month" then 1.day      # Cache 1 ngày cho month
+    when "year" then 3.days      # Cache 3 ngày cho year
+    else 2.hours
     end
 
     calculated_at > max_age.ago
+  end
+
+  # Force refresh analytics data
+  def refresh!
+    calculator = AnalyticsCalculator.new(
+      period: period,
+      period_date: period_date,
+      user_id: user_id,
+      category_id: category_id
+    )
+
+    stats_data = calculator.calculate_all
+
+    update!(
+      top_views_data: stats_data[:top_views],
+      top_likes_data: [],  # Empty for views-only
+      summary_data: stats_data[:summary],
+      total_blogs_count: stats_data[:summary][:total_blogs],
+      total_views_count: stats_data[:summary][:total_views],
+      total_likes_count: 0,  # Zero for views-only
+      calculated_at: Time.current
+    )
   end
 
   # Return Blog relation
@@ -86,9 +108,10 @@ class AnalyticsStat < ApplicationRecord
     blog_ids = top_views_data.first(limit).map { |item| item["blog_id"] || item[:blog_id] }
     return Blog.none if blog_ids.empty?
 
-    Blog.where(id: blog_ids)
-        .includes(:user, :category)
-        .order(Arel.sql("FIELD(id, #{blog_ids.join(',')})"))
+    # Optimize query - only select needed columns, no includes for now
+    Blog.select("blogs.id, blogs.title, blogs.views_count, blogs.created_at, blogs.updated_at, blogs.user_id, blogs.category_id")
+        .where(id: blog_ids)
+        .order(Arel.sql("FIELD(blogs.id, #{blog_ids.join(',')})"))
   end
 
   # Return Blog relation
@@ -99,8 +122,9 @@ class AnalyticsStat < ApplicationRecord
     blog_ids = top_likes_data.first(limit).map { |item| item["blog_id"] || item[:blog_id] }
     return Blog.none if blog_ids.empty?
 
-    Blog.where(id: blog_ids)
-        .includes(:user, :category)
-        .order(Arel.sql("FIELD(id, #{blog_ids.join(',')})"))
+    # Optimize query - only select needed columns, no includes for now
+    Blog.select("blogs.id, blogs.title, blogs.views_count, blogs.created_at, blogs.updated_at, blogs.user_id, blogs.category_id")
+        .where(id: blog_ids)
+        .order(Arel.sql("FIELD(blogs.id, #{blog_ids.join(',')})"))
   end
 end

@@ -15,23 +15,11 @@ class AnalyticsService
     return Blog.none unless stat
 
     # Return Blog relation directly from AnalyticsStat
-    stat.top_views(@limit)
-  end
-
-  def top_likes
-    stat = get_analytics_stat
-    return Blog.none unless stat
-
-    # Return Blog relation directly from AnalyticsStat
-    stat.top_likes(@limit)
+    stat.top_views(limit: @limit)
   end
 
   def cached_top_views
     top_views
-  end
-
-  def cached_top_likes
-    top_likes
   end
 
   def invalidate_cache!

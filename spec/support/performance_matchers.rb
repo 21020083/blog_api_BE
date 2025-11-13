@@ -1,4 +1,6 @@
 RSpec::Matchers.define :complete_within do |expected_time|
+  supports_block_expectations
+
   match do |block|
     start_time = Time.current
     block.call

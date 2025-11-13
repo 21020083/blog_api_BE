@@ -30,9 +30,8 @@ class BlogsController < ApplicationController
   end
 
   def show
-    recent_views = @blog.blog_views.recent
-    recent_views = recent_views.where(user_id: current_user.id) if current_user
-    @blog.log_view(current_user) if recent_views.empty?
+    # Always log view to update views_count
+    @blog.log_view(current_user)
 
     render_success resource: @blog
   end

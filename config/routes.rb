@@ -47,6 +47,8 @@ Rails.application.routes.draw do
       get :top_views
       get :top_likes
       get :summary
+      get :top_views_cached
+      get :top_views_simple
     end
   end
 
